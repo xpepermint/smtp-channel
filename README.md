@@ -34,19 +34,13 @@ import {SMTPChannel} from 'smtp-channel';
 
 ## API
 
-**SMTPChannel({host, port})**
+**SMTPChannel(options)**
 
-> A core SMTP class.
+> A core SMTP class. This class pass options directly to the [net.connect](https://nodejs.org/api/net.html#net_net_connect_options_connectlistener) or  [tls.connect](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) methods. Additional available options are listed below.
 
 | Option | Type | Required | Default | Description
 |--------|------|----------|---------|------------
-| host | String | No | localhost | Host the client should connect to.
-| port | Integer | No | 25 | Port the client should connect to.
-| path | String | No | 4 | Path the client should connect to.
-| localAddress | String | No | - | Local interface to bind to for network connections.
-| localPort | Integer | No | - | Local port to bind to for network connections.
-| family | Integer | No | 4 | Version of IP stack.
-| hints | Integer | No | 0 | [dns.lookup()](https://nodejs.org/api/dns.html#dns_supported_getaddrinfo_flags) hints.
+| secure | Boolean | No | false | When `true` the channel will connect to the SMTP server using TLS.
 | timeout | Integer | No | 0 | A time in milliseconds after the the socket connection is automatically closed (`0` disables the timeout).
 
 **SMTPChannel.prototype.connect({handler, timeout})**:Promise;
@@ -76,6 +70,14 @@ import {SMTPChannel} from 'smtp-channel';
 |--------|------|----------|---------|------------
 | handler | Function|Promise | No | - | A method for handling SMTP server replies.
 | timeout | Integer | No | 0 | A time in milliseconds after the operation automatically rejects (`0` disables the timeout).
+
+**SMTPChannel.prototype.negotiateTLS(options)**:Promise;
+
+> Upgrades the existing socket connection to TLS. This method should be used after sending the `STARTTLS` command. The method accepts `options` which are sent directly to the [tls.connect](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) method.
+
+**SMTPChannel.prototype.isSecure()**:Boolean;
+
+> Returns `true` if the connection is secured over TLS.
 
 **Event: close**: () => {}
 

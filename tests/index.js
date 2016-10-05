@@ -1,5 +1,6 @@
 const test = require('ava');
 const stream = require('stream');
+const fs = require('fs');
 const MailDev = require('maildev');
 const {SMTPChannel} = require('../src');
 
@@ -58,6 +59,27 @@ test.serial('`write` should stream data to the server', async (t) => {
   });
   t.is(writeReplies.length, 5);
   t.is(writeCode, '250');
+
+  await c.close();
+});
+
+test.serial('`startTLS` should upgrade the existing socket to TLS', async (t) => {
+  let c = new SMTPChannel({port: 1025});
+  await c.connect();
+  await c.write('EHLO domain.com\r\n');
+  await c.write('STARTTLS\r\n');
+  await c.negotiateTLS({
+    rejectUnauthorized: false
+  });
+
+  let writeReplies = [];
+  let writeCode = await c.write('EHLO domain.com\r\n', {
+    handler: (line) => writeReplies.push(line)
+  });
+
+  t.is(writeReplies.length, 4);
+  t.is(writeCode, '250');
+  t.is(writeReplies.filter(r => r.substr(4) === 'STARTTLS').length, 0);
 
   await c.close();
 });

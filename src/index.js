@@ -1,5 +1,5 @@
 const net = require('net');
-// import tls from 'tls';
+const tls = require('tls');
 const stream = require('stream');
 const {EventEmitter} = require('events');
 const {LineBuffer} = require('line-buffer');
@@ -22,6 +22,7 @@ exports.SMTPChannel = class extends EventEmitter {
 
     this._socket = null; // the socket connecting to the server
     this._buffer = new LineBuffer(); // for reading socket data in lines
+    this._isSecure = false;
   }
 
   /*
@@ -69,6 +70,38 @@ exports.SMTPChannel = class extends EventEmitter {
   }
 
   /*
+  * Upgrades the existing socket connection to TLS. This method should be used
+  * after sending the `STARTTLS` SMTP command.
+  */
+
+  negotiateTLS(config={}) {
+    return promiseWithTimeout({
+      time: config.timeout,
+      promise: this._negotiateTLSAsPromised(config),
+      error: new Error('negotiate TLS operation timeout')
+    });
+  }
+
+  /*
+  * Returns `true` if the connection is secured over TLS.
+  */
+
+  isSecure() {
+    return this._isSecure;
+  }
+
+  /*
+  * Creates and returns a new socket instance and starts the connection process.
+  */
+
+  _createSocket(config, onConnect) {
+    let isSecure = this._config.secure;
+    let lib = isSecure || config.secure === true ? tls : net;
+
+    return lib.connect(config, onConnect);
+  }
+
+  /*
   * Returns a Promise which connects to the SMTP server and starts socket
   * I/O activity.
   *
@@ -83,7 +116,10 @@ exports.SMTPChannel = class extends EventEmitter {
         return resolve();
       }
 
-      this._socket = net.connect(this._config, () => { // when connection to the server succeeds
+      let options = Object.assign({}, this._config);
+
+      this._socket = this._createSocket(options, () => {// when connection to the server succeeds
+        this._isSecure = options.secure; // is TLS
         this._socket.removeAllListeners('error');
         this._socket.on('close', this._onClose.bind(this));
         this._socket.on('data', this._onData.bind(this));
@@ -131,6 +167,42 @@ exports.SMTPChannel = class extends EventEmitter {
 
       this._resolveCommand({resolve, reject, handler});
       this._convertToStream(data).pipe(this._socket, {end: false});
+    });
+  }
+
+  /*
+  * Upgrades the existing socket connection to TLS. This method should be used
+  * after sending the `STARTTLS` SMTP command.
+  */
+
+  _negotiateTLSAsPromised(config={}) {
+    return new Promise((resolve, reject) => {
+      this._socket.removeAllListeners('close');
+      this._socket.removeAllListeners('data');
+      this._socket.removeAllListeners('end');
+      this._socket.removeAllListeners('error');
+      this._socket.removeAllListeners('timeout');
+      this._socket.removeAllListeners('reply');
+
+      let options = Object.assign({}, this._config, config, {
+        socket: this._socket,
+        secure: true
+      });
+
+      this._socket = this._createSocket(options, () => {
+        this._isSecure = true;
+        this._socket.removeAllListeners('error');
+        this._socket.on('close', this._onClose.bind(this));
+        this._socket.on('data', this._onData.bind(this));
+        this._socket.on('end', this._onEnd.bind(this));
+        this._socket.on('error', this._onError.bind(this));
+        this._socket.on('timeout', this._onTimeout.bind(this));
+        this._socket.setEncoding('utf8');
+        this._socket.setTimeout(this._config.timeout);
+        this._buffer.on('reply', this._onReply.bind(this));
+        resolve();
+      });
+      this._socket.on('error', reject);
     });
   }
 
