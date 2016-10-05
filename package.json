@@ -1,0 +1,41 @@
+{
+  "name": "smtp-channel",
+  "version": "0.1.0",
+  "description": "Low level SMTP communication channel.",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "ava"
+  },
+  "ava": {
+    "files": [
+      "./tests/*.js",
+      "./tests/**/*.js"
+    ],
+    "concurrency": 1,
+    "failFast": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xpepermint/smtp-channel.git"
+  },
+  "keywords": [
+    "smtp",
+    "socket",
+    "channel",
+    "mail",
+    "email",
+    "client",
+    "communication",
+    "raw",
+    "stream"
+  ],
+  "bugs": {
+    "url": "https://github.com/xpepermint/smtp-channel/issues"
+  },
+  "homepage": "https://github.com/xpepermint/smtp-channel#readme",
+  "author": "Kristijan Sedlak (Xpepermint)",
+  "license": "MIT",
+  "devDependencies": {
+    "ava": "0.16.x"
+  }
+}
