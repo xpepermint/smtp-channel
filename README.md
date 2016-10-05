@@ -2,7 +2,7 @@
 
 # smtp-channel
 
-> Low level SMTP communication channel.
+> Low level SMTP communication layer.
 
 This is an open source [npm](http://npmjs.com) package from [Node.js](http://nodejs.org). The source code is available on [GitHub](https://github.com/xpepermint/smtp-channel) where you can also find our [issue tracker](https://github.com/xpepermint/smtp-channel/issues).
 

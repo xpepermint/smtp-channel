@@ -1,7 +1,7 @@
 {
   "name": "smtp-channel",
   "version": "0.1.0",
-  "description": "Low level SMTP communication channel.",
+  "description": "Low level SMTP communication layer.",
   "main": "./src/index.js",
   "scripts": {
     "test": "ava"
