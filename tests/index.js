@@ -3,17 +3,17 @@ const stream = require('stream');
 const MailDev = require('maildev');
 const {SMTPChannel} = require('../src');
 
-// let server = new MailDev({
-//   autoRelayRules: [{ "allow": "*" }]
-// });
-//
-// test.serial.cb.beforeEach((t) => {
-//   server.listen(t.end);
-// });
-//
-// test.serial.cb.afterEach((t) => {
-//   server.end(t.end);
-// });
+let server = new MailDev({
+  autoRelayRules: [{ "allow": "*" }]
+});
+
+test.serial.cb.beforeEach((t) => {
+  server.listen(t.end);
+});
+
+test.serial.cb.afterEach((t) => {
+  server.end(t.end);
+});
 
 test.serial('should connect to and disconnect from the server', async (t) => {
   let c = new SMTPChannel({port: 1025});
