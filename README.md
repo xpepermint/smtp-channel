@@ -6,6 +6,10 @@
 
 This is an open source [npm](http://npmjs.com) package from [Node.js](http://nodejs.org). The source code is available on [GitHub](https://github.com/xpepermint/smtp-channel) where you can also find our [issue tracker](https://github.com/xpepermint/smtp-channel/issues).
 
+## Related Projects
+
+* [smtp-client](https://github.com/xpepermint/smtp-client): Simple, promisified, protocol-based SMTP client.
+
 ## Install
 
 ```
