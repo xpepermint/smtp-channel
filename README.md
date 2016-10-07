@@ -20,7 +20,7 @@ import {SMTPChannel} from 'smtp-channel';
 (async function() {
   let handler = console.log;
 
-  let smtp = new SMTPConnector({
+  let smtp = new SMTPChannel({
     host: 'mx.domain.com',
     port: 25
   });
