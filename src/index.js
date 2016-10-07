@@ -36,7 +36,7 @@ exports.SMTPChannel = class extends EventEmitter {
     return promiseWithTimeout({
       time: timeout,
       promise: this._connectAsPromised({handler}),
-      error: new Error('connect operation timeout')
+      error: new Error('operation timeout')
     });
   }
 
@@ -50,7 +50,7 @@ exports.SMTPChannel = class extends EventEmitter {
     return promiseWithTimeout({
       time: timeout,
       promise: this._closeAsPromised(),
-      error: new Error('close operation timeout')
+      error: new Error('operation timeout')
     });
   }
 
@@ -65,7 +65,7 @@ exports.SMTPChannel = class extends EventEmitter {
     return promiseWithTimeout({
       time: timeout,
       promise: this._writeAsPromised(data, {handler}),
-      error: new Error('close operation timeout')
+      error: new Error('operation timeout')
     });
   }
 
@@ -78,7 +78,7 @@ exports.SMTPChannel = class extends EventEmitter {
     return promiseWithTimeout({
       time: config.timeout,
       promise: this._negotiateTLSAsPromised(config),
-      error: new Error('negotiate TLS operation timeout')
+      error: new Error('operation timeout')
     });
   }
 
@@ -88,6 +88,29 @@ exports.SMTPChannel = class extends EventEmitter {
 
   isSecure() {
     return this._isSecure;
+  }
+
+  /*
+  * Returns the reply code of the provided reply line.
+  *
+  * NOTES: According to the rfc5321 specification, the line will always begin
+  * with the reply code.
+  */
+
+  parseReplyCode(line) {
+    return line.substr(0, 3);
+  }
+
+  /*
+  * Returns `true` if the provided reply line represents the last reply from the
+  * SMTP server.
+  *
+  * NOTE: According to the rfc5321 specification, the last line will begin with
+  * the reply code, followed immediately by <SP>.
+  */
+
+  isLastReply(line) {
+    return line.charAt(3) === ' ';
   }
 
   /*
@@ -222,12 +245,12 @@ exports.SMTPChannel = class extends EventEmitter {
     };
 
     let onLine = (line) => { // handling replies
-      let isLast = this._isLastReply(line);
-      let code = this._parseReplyCode(line);
-      let isSuccess = this._isSuccessReplyCode(code);
+      let isLast = this.isLastReply(line);
+      let code = this.parseReplyCode(line);
+      let args = {isLast, code};
 
-      Promise.resolve(line, {code, isLast, isSuccess})
-        .then(handler)
+      Promise.resolve(line, {code, isLast})
+        .then(() => {if (handler) handler(line, args)})
         .then(() => {if (isLast) resolve(code)});
 
       if (isLast) {
@@ -306,11 +329,11 @@ exports.SMTPChannel = class extends EventEmitter {
   */
 
   _onReply(line) {
-    let isLast = this._isLastReply(line);
-    let code = this._parseReplyCode(line);
-    let isSuccess = this._isSuccessReplyCode
+    let isLast = this.isLastReply(line);
+    let code = this.parseReplyCode(line);
+    let args = {code, isLast};
 
-    this.emit('reply', line, {code, isLast, isSuccess});
+    this.emit('reply', line, args);
   }
 
   /*
@@ -321,41 +344,6 @@ exports.SMTPChannel = class extends EventEmitter {
     this.emit('timeout');
 
     this.write('QUIT\r\n'); // automatically disconnects
-  }
-
-  /*
-  * Returns the reply code of the provided reply line.
-  *
-  * NOTES: According to the rfc5321 specification, the line will always begin
-  * with the reply code.
-  */
-
-  _parseReplyCode(line) {
-    return line.substr(0, 3);
-  }
-
-  /*
-  * Returns `true` if the provided reply line represents the last reply from the
-  * SMTP server.
-  *
-  * NOTE: According to the rfc5321 specification, the last line will begin with
-  * the reply code, followed immediately by <SP>.
-  */
-
-  _isLastReply(line) {
-    return line.charAt(3) === ' ';
-  }
-
-  /*
-  * Returns `true` if the provided reply code represents a success code.
-  *
-  * NOTE: According to the rfc821 specification, the 2xx codes represent a
-  * positive completion reply which means that the requested action has been
-  * successfully completed and a new request may be initiated.
-  */
-
-  _isSuccessReplyCode(code) {
-    return code.charAt(0) === '2';
   }
 
 }

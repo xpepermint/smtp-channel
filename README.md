@@ -47,6 +47,15 @@ import {SMTPChannel} from 'smtp-channel';
 | secure | Boolean | No | false | When `true` the channel will connect to the SMTP server using TLS.
 | timeout | Integer | No | 0 | A time in milliseconds after the socket is automatically closed (`0` disables the timeout).
 
+**SMTPChannel.prototype.close({handler, timeout})**:Promise;
+
+> Destroys the socket and ensures that no more I/O activity happens on this socket.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| handler | Function,Promise | No | - | A method for handling SMTP server replies.
+| timeout | Integer | No | 0 | A time in milliseconds after the operation automatically rejects (`0` disables the timeout).
+
 **SMTPChannel.prototype.connect({handler, timeout})**:Promise;
 
 > Connects to the SMTP server and starts socket I/O activity.
@@ -55,6 +64,30 @@ import {SMTPChannel} from 'smtp-channel';
 |--------|------|----------|---------|------------
 | handler | Function|Promise | No | - | A method for handling SMTP server replies.
 | timeout | Integer | No | 0 | A time in milliseconds after the operation automatically rejects (`0` disables the timeout).
+
+**SMTPChannel.prototype.isLastReply(line)**:String;
+
+> A helper method which returns `true` if the provided `line` represents the last reply from the SMTP server.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| line | String | Yes | - | Server reply string.
+
+**SMTPChannel.prototype.isSecure()**:Boolean;
+
+> Returns `true` if the connection is secured over TLS.
+
+**SMTPChannel.prototype.negotiateTLS(options)**:Promise;
+
+> Upgrades the existing socket connection to TLS. This method should be used after sending the `STARTTLS` command. The method accepts `options` which are sent directly to the [tls.connect](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) method (existing class options are overriden).
+
+**SMTPChannel.prototype.parseReplyCode(line)**:String;
+
+> A helper method which returns a reply code of the provided `line`.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| line | String | Yes | - | Server reply string.
 
 **SMTPChannel.prototype.write(data, {handler, timeout})**:Promise;
 
@@ -65,23 +98,6 @@ import {SMTPChannel} from 'smtp-channel';
 | data | String,Stream,Buffer | Yes | - | Data to be sent to the SMTP server. Make sure that you apply to the SMTP rules and complete lines with `\r\n`. When sending email data stream, make sure you include the `.` as the last line.
 | handler | Function|Promise | No | - | A method for handling SMTP server replies.
 | timeout | Integer | No | 0 | A time in milliseconds after the operation automatically rejects (`0` disables the timeout).
-
-**SMTPChannel.prototype.close({handler, timeout})**:Promise;
-
-> Destroys the socket and ensures that no more I/O activity happens on this socket.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| handler | Function,Promise | No | - | A method for handling SMTP server replies.
-| timeout | Integer | No | 0 | A time in milliseconds after the operation automatically rejects (`0` disables the timeout).
-
-**SMTPChannel.prototype.negotiateTLS(options)**:Promise;
-
-> Upgrades the existing socket connection to TLS. This method should be used after sending the `STARTTLS` command. The method accepts `options` which are sent directly to the [tls.connect](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) method (existing class options are overriden).
-
-**SMTPChannel.prototype.isSecure()**:Boolean;
-
-> Returns `true` if the connection is secured over TLS.
 
 **Event: close**: () => {}
 
