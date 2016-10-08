@@ -96,7 +96,7 @@ import {SMTPChannel} from 'smtp-channel';
 | Option | Type | Required | Default | Description
 |--------|------|----------|---------|------------
 | data | String,Stream,Buffer | Yes | - | Data to be sent to the SMTP server. Make sure that you apply to the SMTP rules and complete lines with `\r\n`. When sending email data stream, make sure you include the `.` as the last line.
-| handler | Function|Promise | No | - | A method for handling SMTP server replies.
+| handler | Function,Promise | No | - | A method for handling SMTP server replies.
 | timeout | Integer | No | 0 | A time in milliseconds after the operation automatically rejects (`0` disables the timeout).
 
 **Event: close**: () => {}
@@ -126,6 +126,16 @@ import {SMTPChannel} from 'smtp-channel';
 | Argument | Type | Description
 |----------|------|------------
 | error | Error | Error object.
+
+**Event: reply**: (line, {code, isLast}) => {}
+
+> Emitted when a new reply from the server is received.
+
+| Argument | Type | Description
+|----------|------|------------
+| line | String | SMTP server reply string.
+| code | String | SMTP server reply code.
+| isLast | Boolean | Is `true` when the `line` represents the last reply from the SMTP server.
 
 **Event: timeout**: () => {}
 

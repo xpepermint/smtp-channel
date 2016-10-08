@@ -98,7 +98,7 @@ exports.SMTPChannel = class extends EventEmitter {
   */
 
   parseReplyCode(line) {
-    return line.substr(0, 3);
+    return line ? line.substr(0, 3) : null;
   }
 
   /*
@@ -110,7 +110,7 @@ exports.SMTPChannel = class extends EventEmitter {
   */
 
   isLastReply(line) {
-    return line.charAt(3) === ' ';
+    return line ? line.charAt(3) === ' ' : null;
   }
 
   /*
@@ -249,9 +249,10 @@ exports.SMTPChannel = class extends EventEmitter {
       let code = this.parseReplyCode(line);
       let args = {isLast, code};
 
-      Promise.resolve(line, {code, isLast})
+      Promise.resolve()
         .then(() => {if (handler) handler(line, args)})
-        .then(() => {if (isLast) resolve(code)});
+        .then(() => {if (isLast) resolve(code)})
+        .catch(reject);
 
       if (isLast) {
         this._socket.removeListener('error', onError);
