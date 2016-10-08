@@ -142,7 +142,7 @@ exports.SMTPChannel = class extends EventEmitter {
       let options = Object.assign({}, this._config);
 
       this._socket = this._createSocket(options, () => {// when connection to the server succeeds
-        this._isSecure = options.secure; // is TLS
+        this._isSecure = !!options.secure; // is TLS
         this._socket.removeAllListeners('error');
         this._socket.on('close', this._onClose.bind(this));
         this._socket.on('data', this._onData.bind(this));
