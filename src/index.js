@@ -37,7 +37,7 @@ exports.SMTPChannel = class extends EventEmitter {
     return promiseWithTimeout({
       time: timeout,
       promise: this._connectAsPromised({handler}),
-      error: new Error('operation timeout')
+      error: new Error('Command has timed out')
     });
   }
 
@@ -51,7 +51,7 @@ exports.SMTPChannel = class extends EventEmitter {
     return promiseWithTimeout({
       time: timeout,
       promise: this._closeAsPromised(),
-      error: new Error('operation timeout')
+      error: new Error('Command has timed out')
     });
   }
 
@@ -66,7 +66,7 @@ exports.SMTPChannel = class extends EventEmitter {
     return promiseWithTimeout({
       time: timeout,
       promise: this._writeAsPromised(data, {handler}),
-      error: new Error('operation timeout')
+      error: new Error('Command has timed out')
     });
   }
 
@@ -79,7 +79,7 @@ exports.SMTPChannel = class extends EventEmitter {
     return promiseWithTimeout({
       time: config.timeout,
       promise: this._negotiateTLSAsPromised(config),
-      error: new Error('operation timeout')
+      error: new Error('Command has timed out')
     });
   }
 
@@ -185,7 +185,7 @@ exports.SMTPChannel = class extends EventEmitter {
   _writeAsPromised(data, {handler}) {
     return new Promise((resolve, reject) => {
       if (!this._socket) {
-        return reject(new Error('no connection to execute a write operation'));
+        return reject(new Error('Socket has closed'));
       }
 
       this._resolveCommand({resolve, reject, handler}); // prepare resolver before the channel starts streaming data to the server
@@ -240,7 +240,14 @@ exports.SMTPChannel = class extends EventEmitter {
 
   _resolveCommand({resolve, reject, handler=null}) { // handling request
 
+    let onClose = () => { // socket unexpectedly closed
+      this._socket.removeListener('error', onError);
+      this._receiveBuffer.removeListener('line', onLine);
+      reject(new Error('Socket has closed unexpectedly'));
+    };
+
     let onError = (error) => { // socket write error
+      this._socket.removeListener('close', onClose);
       this._receiveBuffer.removeListener('line', onLine);
       reject(error);
     };
@@ -256,11 +263,13 @@ exports.SMTPChannel = class extends EventEmitter {
         .catch(reject);
 
       if (isLast) {
+        this._socket.removeListener('close', onClose);
         this._socket.removeListener('error', onError);
         this._receiveBuffer.removeListener('line', onLine);
       }
     };
 
+    this._socket.once('close', onClose);
     this._socket.once('error', onError);
     this._receiveBuffer.on('line', onLine);
   }
@@ -292,6 +301,8 @@ exports.SMTPChannel = class extends EventEmitter {
   */
 
   _onClose() {
+    this._socket = null;
+
     this.emit('close');
   }
 

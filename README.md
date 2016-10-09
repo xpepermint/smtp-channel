@@ -78,7 +78,11 @@ import {SMTPChannel} from 'smtp-channel';
 
 **SMTPChannel.prototype.negotiateTLS(options)**:Promise;
 
-> Upgrades the existing socket connection to TLS. This method should be used after sending the `STARTTLS` command. The method accepts `options` which are sent directly to the [tls.connect](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) method (existing class options are overriden).
+> Upgrades the existing socket connection to TLS. This method should be used after sending the `STARTTLS` command. The method accepts `options` which are sent directly to the [tls.connect](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) method (existing class options are overriden). Custom options are listed below.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| timeout | Integer | No | 0 | A time in milliseconds after the operation automatically rejects (`0` disables the timeout).
 
 **SMTPChannel.prototype.parseReplyCode(line)**:String;
 
