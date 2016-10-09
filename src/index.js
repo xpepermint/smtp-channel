@@ -273,12 +273,10 @@ exports.SMTPChannel = class extends EventEmitter {
       return data;
     }
 
-    let chars = data.split('')
-    return new stream.Readable({
-      read: function(size) {
-        this.push(chars.shift());
-      }
-    });
+    let rs = new stream.Readable();
+    rs.push(data);
+    rs.push(null);
+    return rs;
   }
 
   /*
