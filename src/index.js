@@ -21,7 +21,8 @@ exports.SMTPChannel = class extends EventEmitter {
     }, config); // class and socket configuration
 
     this._socket = null; // the socket connecting to the server
-    this._buffer = new LineBuffer(); // for reading socket data in lines
+    this._receiveBuffer = new LineBuffer(); // for reading server replies in lines
+    this._sendBuffer = new LineBuffer(); // for reading socket write commands in lines
     this._isSecure = false;
   }
 
@@ -145,13 +146,12 @@ exports.SMTPChannel = class extends EventEmitter {
         this._isSecure = !!options.secure; // is TLS
         this._socket.removeAllListeners('error');
         this._socket.on('close', this._onClose.bind(this));
-        this._socket.on('data', this._onData.bind(this));
+        this._socket.on('data', this._onReceive.bind(this));
         this._socket.on('end', this._onEnd.bind(this));
         this._socket.on('error', this._onError.bind(this));
         this._socket.on('timeout', this._onTimeout.bind(this));
         this._socket.setEncoding('utf8');
         this._socket.setTimeout(this._config.timeout);
-        this._buffer.on('reply', this._onReply.bind(this));
         this._onConnect();
       });
 
@@ -188,8 +188,11 @@ exports.SMTPChannel = class extends EventEmitter {
         return reject(new Error('no connection to execute a write operation'));
       }
 
-      this._resolveCommand({resolve, reject, handler});
-      this._convertToStream(data).pipe(this._socket, {end: false});
+      this._resolveCommand({resolve, reject, handler}); // prepare resolver before the channel starts streaming data to the server
+
+      let channel = this._convertToStream(data); // convert command into stream
+      channel.pipe(this._createOnSendStream()); // log uploaded data
+      channel.pipe(this._socket, {end: false}); // upload to SMTP server
     });
   }
 
@@ -205,7 +208,6 @@ exports.SMTPChannel = class extends EventEmitter {
       this._socket.removeAllListeners('end');
       this._socket.removeAllListeners('error');
       this._socket.removeAllListeners('timeout');
-      this._socket.removeAllListeners('reply');
 
       let options = Object.assign({}, this._config, config, {
         socket: this._socket,
@@ -216,13 +218,12 @@ exports.SMTPChannel = class extends EventEmitter {
         this._isSecure = true;
         this._socket.removeAllListeners('error');
         this._socket.on('close', this._onClose.bind(this));
-        this._socket.on('data', this._onData.bind(this));
+        this._socket.on('data', this._onReceive.bind(this));
         this._socket.on('end', this._onEnd.bind(this));
         this._socket.on('error', this._onError.bind(this));
         this._socket.on('timeout', this._onTimeout.bind(this));
         this._socket.setEncoding('utf8');
         this._socket.setTimeout(this._config.timeout);
-        this._buffer.on('reply', this._onReply.bind(this));
         resolve();
       });
       this._socket.on('error', reject);
@@ -240,7 +241,7 @@ exports.SMTPChannel = class extends EventEmitter {
   _resolveCommand({resolve, reject, handler=null}) { // handling request
 
     let onError = (error) => { // socket write error
-      this._buffer.removeListener('line', onLine);
+      this._receiveBuffer.removeListener('line', onLine);
       reject(error);
     };
 
@@ -256,12 +257,12 @@ exports.SMTPChannel = class extends EventEmitter {
 
       if (isLast) {
         this._socket.removeListener('error', onError);
-        this._buffer.removeListener('line', onLine);
+        this._receiveBuffer.removeListener('line', onLine);
       }
     };
 
     this._socket.once('error', onError);
-    this._buffer.on('line', onLine);
+    this._receiveBuffer.on('line', onLine);
   }
 
   /*
@@ -279,6 +280,13 @@ exports.SMTPChannel = class extends EventEmitter {
     return rs;
   }
 
+  _createOnSendStream() {
+    let logger = new stream.PassThrough();
+    logger.on('data', (data) => this._onSend(data.toString('utf8')));
+
+    return logger;
+  }
+
   /*
   * A handler which is triggered once the socket is fully closed.
   */
@@ -288,22 +296,19 @@ exports.SMTPChannel = class extends EventEmitter {
   }
 
   /*
+  * A handler which is triggered when a line of data is sent to the SMTP server.
+  */
+
+  _onCommand(line) {
+    this.emit('command', line);
+  }
+
+  /*
   * A handler which is triggered when a socket connection is established.
   */
 
   _onConnect() {
     this.emit('connect');
-  }
-
-  /*
-  * A handler which is triggered when a chunk of data is received from the
-  * SMTP server.
-  */
-
-  _onData(chunk) {
-    this.emit('data', chunk);
-
-    this._buffer.feed(chunk); // feed the buffer with server replies
   }
 
   /*
@@ -324,15 +329,39 @@ exports.SMTPChannel = class extends EventEmitter {
   }
 
   /*
+  * A handler which is triggered when a chunk of data is received from the
+  * SMTP server.
+  */
+
+  _onReceive(chunk) {
+    this.emit('receive', chunk);
+
+    let lines = this._receiveBuffer.feed(chunk); // feed the buffer with server replies
+    for (let line of lines) {
+      this._onReply(line);
+    }
+  }
+
+  /*
   * A handler which is triggered on each reply from the server.
   */
 
   _onReply(line) {
-    let isLast = this.isLastReply(line);
-    let code = this.parseReplyCode(line);
-    let args = {code, isLast};
+    this.emit('reply', line);
+  }
 
-    this.emit('reply', line, args);
+  /*
+  * A handler which is triggered when a chunk of data is sent to the SMTP
+  * server.
+  */
+
+  _onSend(chunk) {
+    this.emit('send', chunk);
+
+    let lines = this._sendBuffer.feed(chunk); // feed the buffer with server replies
+    for (let line of lines) {
+      this._onCommand(line);
+    }
   }
 
   /*

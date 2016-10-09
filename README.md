@@ -40,7 +40,7 @@ import {SMTPChannel} from 'smtp-channel';
 
 **SMTPChannel(options)**
 
-> The core SMTP class. This class passes options directly to the [net.connect](https://nodejs.org/api/net.html#net_net_connect_options_connectlistener) or  [tls.connect](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) methods. Other available options are listed below.
+> The core SMTP class. This class passes options directly to the [net.connect](https://nodejs.org/api/net.html#net_net_connect_options_connectlistener) or  [tls.connect](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) methods. Custom available options are listed below.
 
 | Option | Type | Required | Default | Description
 |--------|------|----------|---------|------------
@@ -106,17 +106,17 @@ import {SMTPChannel} from 'smtp-channel';
 
 > Emitted once the socket is fully closed.
 
-**Event: connect**: () => {}
+**Event: command**: (line) => {}
 
-> Emitted when a socket connection is successfully established.
-
-**Event: data**: (data) => {}
-
-> Emitted when data is received.
+> Emitted when a line of data is sent to the SMTP server.
 
 | Argument | Type | Description
 |----------|------|------------
-| data | Buffer,String | Received data string.
+| line | String | Client command string.
+
+**Event: connect**: () => {}
+
+> Emitted when a socket connection is successfully established.
 
 **Event: end**: () => {}
 
@@ -130,15 +130,29 @@ import {SMTPChannel} from 'smtp-channel';
 |----------|------|------------
 | error | Error | Error object.
 
-**Event: reply**: (line, {code, isLast}) => {}
+**Event: receive**: (chunk) => {}
+
+> Emitted when a chunk of data is received from the SMTP server.
+
+| Argument | Type | Description
+|----------|------|------------
+| chunk | Buffer,String | A chunk of data.
+
+**Event: reply**: (line) => {}
 
 > Emitted when a new reply from the server is received.
 
 | Argument | Type | Description
 |----------|------|------------
 | line | String | SMTP server reply string.
-| code | String | SMTP server reply code.
-| isLast | Boolean | Is `true` when the `line` represents the last reply from the SMTP server.
+
+**Event: send**: (chunk) => {}
+
+> Emitted when a chunk of data is sent to the SMTP server.
+
+| Argument | Type | Description
+|----------|------|------------
+| chunk | Buffer,String | A chunk of data.
 
 **Event: timeout**: () => {}
 
