@@ -47,8 +47,6 @@ import {SMTPChannel} from 'smtp-channel';
 | secure | Boolean | No | false | When `true` the channel will connect to the SMTP server using TLS.
 | timeout | Integer | No | 0 | A time in milliseconds after the socket is automatically closed (`0` disables the timeout).
 
-### Methods
-
 **SMTPChannel.prototype.close({timeout})**:Promise;
 
 > Destroys the socket and ensures that no more I/O activity happens on this socket.
@@ -99,8 +97,6 @@ import {SMTPChannel} from 'smtp-channel';
 | data | String,Stream,Buffer | Yes | - | Data to be sent to the SMTP server. Make sure that you apply to the SMTP rules and complete lines with `\r\n`. When sending email data stream, make sure you include the `.` as the last line.
 | handler | Function,Promise | No | - | A method for handling SMTP server replies.
 | timeout | Integer | No | 0 | A time in milliseconds after the operation automatically rejects (`0` disables the timeout).
-
-### Events
 
 **Event: close**: () => {}
 
