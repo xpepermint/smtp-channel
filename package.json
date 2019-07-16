@@ -36,11 +36,11 @@
   "author": "Kristijan Sedlak (Xpepermint)",
   "license": "MIT",
   "devDependencies": {
-    "ava": "0.16.x",
-    "maildev": "0.14.x"
+    "ava": "^0.16.0",
+    "maildev": "^0.14.0"
   },
   "dependencies": {
-    "line-buffer": "0.1.x",
-    "promised-timeout": "0.2.x"
+    "line-buffer": "^0.1.4",
+    "promised-timeout": "^0.2.0"
   }
 }
