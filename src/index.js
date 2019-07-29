@@ -241,7 +241,9 @@ exports.SMTPChannel = class extends EventEmitter {
   _resolveCommand({resolve, reject, handler=null}) { // handling request
 
     let onClose = () => { // socket unexpectedly closed
-      this._socket.removeListener('error', onError);
+      if(this._socket) {
+        this._socket.removeListener('error', onError);
+      }
       this._receiveBuffer.removeListener('line', onLine);
       reject(new Error('Socket has closed unexpectedly'));
     };
