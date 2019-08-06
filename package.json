@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "line-buffer": "0.1.x",
-    "promised-timeout": "0.2.x"
+    "promised-timeout": "0.2.x",
+    "socks": "^2.3.2"
   }
 }

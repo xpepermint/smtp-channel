@@ -1,5 +1,6 @@
 const net = require('net');
 const tls = require('tls');
+const {SocksClient} = require('socks');
 const stream = require('stream');
 const {EventEmitter} = require('events');
 const {LineBuffer} = require('line-buffer');
@@ -119,10 +120,43 @@ exports.SMTPChannel = class extends EventEmitter {
   */
 
   _createSocket(config, onConnect) {
-    let isSecure = this._config.secure;
-    let lib = isSecure || config.secure === true ? tls : net;
+    return new Promise((resolve, reject) => {
+      let isSecure = this._config.secure;
+      let lib = isSecure || config.secure === true ? tls : net;
+      let isSocks = config.proxy !== undefined;
+      
+      if(!isSocks) {
+        resolve(lib.connect(config, onConnect));
+      } else {
+        const socksOptions = {
+          proxy: config.proxy,
+        
+          command: 'connect',
+        
+          destination: {
+            host: config.host,
+            port: config.port
+          }
+        };
 
-    return lib.connect(config, onConnect);
+        SocksClient.createConnection(socksOptions, (err, info) => {
+          if (!err) {
+            if(!isSecure) {
+              resolve(info.socket);
+
+              onConnect(info.socket);
+            } else {
+              const socket = new tls.TLSSocket(info.socket, config);
+
+              resolve(socket);
+              onConnect(socket);
+            }
+          } else {
+            reject(err);
+          }
+        });
+      }
+    });
   }
 
   /*
@@ -142,7 +176,11 @@ exports.SMTPChannel = class extends EventEmitter {
 
       let options = Object.assign({}, this._config);
 
-      this._socket = this._createSocket(options, () => {// when connection to the server succeeds
+      this._createSocket(options, (socket) => {// when connection to the server succeeds
+        this._socket = socket;
+
+        this._resolveCommand({resolve, reject, handler});
+
         this._isSecure = !!options.secure; // is TLS
         this._socket.removeAllListeners('error');
         this._socket.on('close', this._onClose.bind(this));
@@ -154,8 +192,6 @@ exports.SMTPChannel = class extends EventEmitter {
         this._socket.setTimeout(this._config.timeout);
         this._onConnect();
       });
-
-      this._resolveCommand({resolve, reject, handler});
     });
   }
 
@@ -214,7 +250,11 @@ exports.SMTPChannel = class extends EventEmitter {
         secure: true
       });
 
-      this._socket = this._createSocket(options, () => {
+      this._createSocket(options, (socket) => {
+        this._socket = socket;
+
+        this._socket.on('error', reject);
+
         this._isSecure = true;
         this._socket.removeAllListeners('error');
         this._socket.on('close', this._onClose.bind(this));
@@ -224,9 +264,9 @@ exports.SMTPChannel = class extends EventEmitter {
         this._socket.on('timeout', this._onTimeout.bind(this));
         this._socket.setEncoding('utf8');
         this._socket.setTimeout(this._config.timeout);
+
         resolve();
       });
-      this._socket.on('error', reject);
     });
   }
 
