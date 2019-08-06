@@ -126,7 +126,11 @@ exports.SMTPChannel = class extends EventEmitter {
       let isSocks = config.proxy !== undefined;
       
       if(!isSocks) {
-        resolve(lib.connect(config, onConnect));
+        const socket = lib.connect(config, () => {
+          resolve(socket);
+
+          onConnect(socket);
+        });
       } else {
         const socksOptions = {
           proxy: config.proxy,
