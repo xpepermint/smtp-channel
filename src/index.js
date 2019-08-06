@@ -195,6 +195,8 @@ exports.SMTPChannel = class extends EventEmitter {
         this._socket.setEncoding('utf8');
         this._socket.setTimeout(this._config.timeout);
         this._onConnect();
+      }).catch(() => {
+        this._resolveCommand({resolve, reject, handler});
       });
     });
   }
