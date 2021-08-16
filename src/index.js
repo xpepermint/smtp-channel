@@ -103,6 +103,19 @@ exports.SMTPChannel = class extends EventEmitter {
   }
 
   /*
+  * Returns the reply enhanced code of the provided reply line.
+  *
+  * NOTES: According to the RFC 2034 specification, Servers supporting the Enhanced-Status-Codes extension must preface
+   the text part of almost all response lines with a status code
+  */
+
+  parseReplyEnhancedCode(line) {
+    const regex = /[245]\.[1-7]\.\d{1,3}/g;
+    const found = line.match(regex);
+    return found ? found[0] : null;
+  }
+
+  /*
   * Returns `true` if the provided reply line represents the last reply from the
   * SMTP server.
   *
@@ -257,7 +270,8 @@ exports.SMTPChannel = class extends EventEmitter {
     let onLine = (line) => { // handling replies
       let isLast = this.isLastReply(line);
       let code = this.parseReplyCode(line);
-      let args = {isLast, code};
+      let enhancedCode = this.parseReplyEnhancedCode(line);
+      let args = {isLast, code, enhancedCode};
 
       Promise.resolve()
         .then(() => {if (handler) handler(line, args)})
