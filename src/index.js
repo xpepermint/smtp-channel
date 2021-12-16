@@ -384,7 +384,7 @@ exports.SMTPChannel = class extends EventEmitter {
   _onTimeout() {
     this.emit('timeout');
 
-    this.write('QUIT\r\n'); // automatically disconnects
+    this.write('QUIT\r\n').catch((error) => { this.emit('error', error); }); // automatically disconnects
   }
 
 }
