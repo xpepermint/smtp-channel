@@ -1,5 +1,6 @@
 const net = require('net');
 const tls = require('tls');
+const { SocksClient } = require('socks');
 const stream = require('stream');
 const {EventEmitter} = require('events');
 const {LineBuffer} = require('line-buffer');
@@ -119,10 +120,37 @@ exports.SMTPChannel = class extends EventEmitter {
   */
 
   _createSocket(config, onConnect) {
-    let isSecure = this._config.secure;
-    let lib = isSecure || config.secure === true ? tls : net;
-
-    return lib.connect(config, onConnect);
+    if (config.socks) {
+      let socksUrl = new URL(config.socks)
+      let socksVersion = {
+        'socks4': 4,
+        'socks5': 5,
+      }[socksUrl.protocol] || 5
+      let socksClient = new SocksClient({
+        proxy: {
+          host: socksUrl.hostname,
+          port: socksUrl.port && parseFloat(socksUrl.port),
+          type: socksVersion,
+        },
+        command: 'connect',
+        destination: {
+          host: config.host,
+          port: config.port,
+        },
+      })
+      socksClient.once('established', (info)=>{
+        onConnect()
+      })
+      socksClient.once('error', (err)=>{
+        onConnect(err)
+      })
+      socksClient.connect()
+      return socksClient.socket
+    } else {
+      let isSecure = this._config.secure;
+      let lib = isSecure || config.secure === true ? tls : net;
+      return lib.connect(config, onConnect);
+    }
   }
 
   /*
@@ -210,6 +238,7 @@ exports.SMTPChannel = class extends EventEmitter {
       this._socket.removeAllListeners('timeout');
 
       let options = Object.assign({}, this._config, config, {
+        socks: null,
         socket: this._socket,
         secure: true
       });
