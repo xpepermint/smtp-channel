@@ -1,3 +1,5 @@
+
+
 ![Build Status](https://travis-ci.org/xpepermint/smtp-channel.svg?branch=master)&nbsp;[![NPM Version](https://badge.fury.io/js/smtp-channel.svg)](https://badge.fury.io/js/smtp-channel)&nbsp;[![Dependency Status](https://gemnasium.com/xpepermint/smtp-channel.svg)](https://gemnasium.com/xpepermint/smtp-channel)
 
 # smtp-channel
@@ -24,7 +26,7 @@ import {SMTPChannel} from 'smtp-channel';
 (async function() {
   let handler = console.log;
 
-  let smtp = new SMTPChannel({
+  let s = new SMTPChannel({
     host: 'mx.domain.com',
     port: 25
   });
